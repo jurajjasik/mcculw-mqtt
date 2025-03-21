@@ -4,10 +4,10 @@ mqtt:
   client_id: "mcc_daq_client"
 
 adc:
-  monitored_channels: # [board, channel]
-
-  # - [ 0, 0 ]
-  # - [ 0, 1 ]
+  monitored_channels:
+  # [board, channel]
+  - [ 0, 0 ]
+  - [ 0, 1 ]
   ranges:
     # [board, channel]: "range"
     "0,0": "BIP10VOLTS"
