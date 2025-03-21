@@ -65,19 +65,12 @@ The MQTT client subscribes to DAC and ADC topics, parses board and channel infor
 
 ## Configuration
 
-Edit the Python script (`mcculw_mqtt_client.py`) to adjust these settings:
+Edit the `config.yaml` file to customize the MQTT broker settings, DAQ device configuration, and other parameters.
 
-```python
-BROKER_ADDRESS = "localhost"   # Your MQTT broker address
-BROKER_PORT = 1883             # MQTT broker port
-SAMPLING_INTERVAL = 5          # ADC periodic sampling interval in seconds
-MONITORED_ADC_CHANNELS = [
-    (0, 0),
-    (0, 1)
-]
-MIN_VOLTAGE = -10.0            # Minimum voltage limit for DAC
-MAX_VOLTAGE = 10.0             # Maximum voltage limit for DAC
-```
+```yaml
+mqtt:
+  broker: localhost
+  port: 1883
 
 ---
 

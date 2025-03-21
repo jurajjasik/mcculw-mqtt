@@ -1,0 +1,22 @@
+mqtt:
+  broker_address: "localhost"
+  broker_port: 1883
+  client_id: "mcc_daq_client"
+
+adc:
+  monitored_channels: # [board, channel]
+
+  # - [ 0, 0 ]
+  # - [ 0, 1 ]
+  ranges:
+    # [board, channel]: "range"
+    "0,0": "BIP10VOLTS"
+    "0,1": "BIP10VOLTS"
+
+dac:
+  ranges:
+    # [board, channel]
+    "0,0": "BIP10VOLTS"
+    "0,1": "BIP10VOLTS"
+
+sampling_interval: 1 # in seconds
