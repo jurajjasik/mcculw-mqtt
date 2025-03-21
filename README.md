@@ -71,6 +71,7 @@ Edit the `config.yaml` file to customize the MQTT broker settings, DAQ device co
 mqtt:
   broker: localhost
   port: 1883
+```
 
 ---
 
