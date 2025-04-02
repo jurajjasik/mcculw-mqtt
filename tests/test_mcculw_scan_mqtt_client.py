@@ -1,12 +1,11 @@
-import json
-import time
 import tkinter as tk
-from tkinter import messagebox, ttk
-
-import matplotlib.pyplot as plt
+from tkinter import ttk, messagebox
+import json
 import numpy as np
 import paho.mqtt.client as mqtt
+import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import time
 
 
 class ScanTestGUI:
@@ -14,29 +13,33 @@ class ScanTestGUI:
         self.root = root
         self.root.title("MQTT Scan Client Tester")
 
-        self.controller_connected = tk.StringVar(value="Disconnected")
-        self.create_widgets()
-
         self.client = mqtt.Client()
-        self.client.connect("localhost")
-        self.client.loop_start()
         self.client.on_message = self.on_message
-        self.client.subscribe("scan/status")
-        self.client.subscribe("scan/result")
-        self.client.subscribe("scan/error")
 
+        self.controller_connected = tk.StringVar(value="Connecting...")
+        self.create_widgets()
         self.root.protocol("WM_DELETE_WINDOW", self.on_close)
 
-    def on_close(self):
+        self.mqtt_connected = False
+        self.retry_mqtt_connection()
+
+    def retry_mqtt_connection(self):
         try:
-            self.client.loop_stop()
-            time.sleep(0.1)  # Let the loop settle
-            self.client.disconnect()
+            if not self.mqtt_connected:
+                self.client.connect("localhost")
+                self.client.loop_start()
+                self.client.subscribe("scan/status")
+                self.client.subscribe("scan/result")
+                self.client.subscribe("scan/error")
+                self.mqtt_connected = True
+                self.controller_connected.set("Connected")
+                self.status_label.configure(foreground="green")
         except Exception as e:
-            print(f"MQTT disconnect error: {e}")
-        finally:
-            self.root.quit()
-            self.root.destroy()
+            self.controller_connected.set("MQTT Error (retrying...)")
+            self.status_label.configure(foreground="orange")
+            self.output_text.insert(tk.END, f"MQTT connection failed: {e}\n")
+            self.output_text.see(tk.END)
+            self.root.after(5000, self.retry_mqtt_connection)
 
     def create_widgets(self):
         frame = ttk.Frame(self.root, padding=10)
@@ -95,6 +98,9 @@ class ScanTestGUI:
             frame.columnconfigure(i, weight=1)
 
     def send_init(self):
+        if not self.mqtt_connected:
+            messagebox.showerror("MQTT Error", "MQTT broker not connected.")
+            return
         try:
             rate = int(self.param_entries["Rate"].get())
             freq = float(self.param_entries["Frequency (Hz)"].get())
@@ -122,10 +128,12 @@ class ScanTestGUI:
             messagebox.showerror("Error", str(e))
 
     def send_start(self):
-        self.client.publish("scan/start", json.dumps({}))
+        if self.mqtt_connected:
+            self.client.publish("scan/start", json.dumps({}))
 
     def send_abort(self):
-        self.client.publish("scan/abort", json.dumps({}))
+        if self.mqtt_connected:
+            self.client.publish("scan/abort", json.dumps({}))
 
     def on_message(self, client, userdata, msg):
         topic = msg.topic
@@ -163,6 +171,16 @@ class ScanTestGUI:
             self.ax.plot(ch_data, label=f"ADC {i}")
         self.ax.legend()
         self.canvas.draw()
+
+    def on_close(self):
+        try:
+            self.client.loop_stop()
+            time.sleep(0.1)
+            self.client.disconnect()
+        except Exception:
+            pass
+        self.root.quit()
+        self.root.destroy()
 
 
 if __name__ == "__main__":
