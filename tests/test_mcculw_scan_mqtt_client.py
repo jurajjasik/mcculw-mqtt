@@ -1,11 +1,12 @@
-import tkinter as tk
-from tkinter import ttk, messagebox
 import json
+import time
+import tkinter as tk
+from tkinter import messagebox, ttk
+
+import matplotlib.pyplot as plt
 import numpy as np
 import paho.mqtt.client as mqtt
-import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-import time
 
 
 class ScanTestGUI:
@@ -16,7 +17,8 @@ class ScanTestGUI:
         self.client = mqtt.Client()
         self.client.on_message = self.on_message
 
-        self.controller_connected = tk.StringVar(value="Connecting...")
+        self.controller_connected = tk.StringVar(value="Disconnected")
+        self.broker_connected = tk.StringVar(value="Connecting...")
         self.create_widgets()
         self.root.protocol("WM_DELETE_WINDOW", self.on_close)
 
@@ -32,11 +34,11 @@ class ScanTestGUI:
                 self.client.subscribe("scan/result")
                 self.client.subscribe("scan/error")
                 self.mqtt_connected = True
-                self.controller_connected.set("Connected")
-                self.status_label.configure(foreground="green")
+                self.broker_connected.set("Connected")
+                self.broker_status_label.configure(foreground="green")
         except Exception as e:
-            self.controller_connected.set("MQTT Error (retrying...)")
-            self.status_label.configure(foreground="orange")
+            self.broker_connected.set("MQTT Error (retrying...)")
+            self.broker_status_label.configure(foreground="orange")
             self.output_text.insert(tk.END, f"MQTT connection failed: {e}\n")
             self.output_text.see(tk.END)
             self.root.after(5000, self.retry_mqtt_connection)
@@ -45,12 +47,18 @@ class ScanTestGUI:
         frame = ttk.Frame(self.root, padding=10)
         frame.pack(fill=tk.BOTH, expand=True)
 
-        # Status label
-        ttk.Label(frame, text="Controller Status:").grid(row=0, column=0, sticky=tk.W)
+        # Broker and Controller Status labels
+        ttk.Label(frame, text="Broker Status:").grid(row=0, column=0, sticky=tk.W)
+        self.broker_status_label = ttk.Label(
+            frame, textvariable=self.broker_connected, foreground="red"
+        )
+        self.broker_status_label.grid(row=0, column=1, sticky=tk.W)
+
+        ttk.Label(frame, text="Controller Status:").grid(row=1, column=0, sticky=tk.W)
         self.status_label = ttk.Label(
             frame, textvariable=self.controller_connected, foreground="red"
         )
-        self.status_label.grid(row=0, column=1, sticky=tk.W)
+        self.status_label.grid(row=1, column=1, sticky=tk.W)
 
         # Parameters
         self.param_entries = {}
@@ -63,15 +71,15 @@ class ScanTestGUI:
                 ("ADC Channels (comma-separated)", "0"),
             ]
         ):
-            ttk.Label(frame, text=label + ":").grid(row=i + 1, column=0, sticky=tk.W)
+            ttk.Label(frame, text=label + ":").grid(row=i + 2, column=0, sticky=tk.W)
             entry = ttk.Entry(frame)
             entry.insert(0, default)
-            entry.grid(row=i + 1, column=1, sticky=tk.EW)
+            entry.grid(row=i + 2, column=1, sticky=tk.EW)
             self.param_entries[label] = entry
 
         # Buttons
         button_frame = ttk.Frame(frame)
-        button_frame.grid(row=6, column=0, columnspan=2, pady=10)
+        button_frame.grid(row=7, column=0, columnspan=2, pady=10)
         ttk.Button(button_frame, text="Initialize", command=self.send_init).pack(
             side=tk.LEFT, padx=5
         )
@@ -88,11 +96,11 @@ class ScanTestGUI:
         self.ax.set_xlabel("Sample")
         self.ax.set_ylabel("Value")
         self.canvas = FigureCanvasTkAgg(self.fig, master=frame)
-        self.canvas.get_tk_widget().grid(row=7, column=0, columnspan=2, pady=10)
+        self.canvas.get_tk_widget().grid(row=8, column=0, columnspan=2, pady=10)
 
         # Output
         self.output_text = tk.Text(frame, height=10)
-        self.output_text.grid(row=8, column=0, columnspan=2, pady=10)
+        self.output_text.grid(row=9, column=0, columnspan=2, pady=10)
 
         for i in range(2):
             frame.columnconfigure(i, weight=1)
