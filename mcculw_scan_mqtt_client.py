@@ -49,6 +49,31 @@ class ScanController:
         self.status_thread = None
         self.scan_rate = 10000
 
+        self.device_check_thread = threading.Thread(
+            target=self.device_check_loop, daemon=True
+        )
+        self.device_check_thread.start()
+
+    def check_device_available(self):
+        try:
+            self.daq_dev_info = DaqDeviceInfo(self.board_num)
+            self.client.publish(
+                f"{self.base_topic}/device",
+                json.dumps({"device_available": True}),
+                retain=True,
+            )
+        except Exception:
+            self.client.publish(
+                f"{self.base_topic}/device",
+                json.dumps({"device_available": False}),
+                retain=True,
+            )
+
+    def device_check_loop(self):
+        while True:
+            self.check_device_available()
+            time.sleep(10)
+
     def on_connect(self, client, userdata, flags, rc):
         topics = ["init", "start", "abort"]
         for t in topics:
